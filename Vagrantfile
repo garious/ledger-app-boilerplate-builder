@@ -38,24 +38,36 @@ Vagrant.configure("2") do |config|
   # Bridged networks make the machine appear as another physical device on
   # your network.
   # config.vm.network "public_network"
-
+  
   # Share an additional folder to the guest VM. The first argument is
   # the path on the host to the actual folder. The second argument is
   # the path on the guest to mount the folder. And the optional third
   # argument is a set of non-required options.
-  # config.vm.synced_folder "../data", "/vagrant_data"
+  config.vm.synced_folder "../gcc-arm-none-eabi-5_3-2016q1", "/bolos-env/gcc-arm-none-eabi-5_3-2016q1"
+  config.vm.synced_folder "../clang+llvm-7.0.0-x86_64-linux-gnu-ubuntu-16.04", "/bolos-env/clang-arm-fropi"
+  config.vm.synced_folder "../ledger-app-boilerplate", "/ledger-app-boilerplate"
+  config.vm.synced_folder "../ledger-app-sia", "/ledger-app-sia"
+  config.vm.synced_folder "../nanos-secure-sdk", "/bolos-sdk"
 
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.
   # Example for VirtualBox:
   #
-  # config.vm.provider "virtualbox" do |vb|
+  config.vm.provider "virtualbox" do |vb|
+      # Enable USB
+      vb.customize ["modifyvm", :id, "--usb", "on"]
+      vb.customize ["usbfilter", "add", "0",
+          "--target", :id,
+          "--name", "Ledger Nano S",
+          "--manufacturer", "Ledger",
+          "--product", "Nano S"]
+
   #   # Display the VirtualBox GUI when booting the machine
   #   vb.gui = true
   #
   #   # Customize the amount of memory on the VM:
   #   vb.memory = "1024"
-  # end
+  end
   #
   # View the documentation for the provider you are using for more
   # information on available options.
@@ -63,8 +75,14 @@ Vagrant.configure("2") do |config|
   # Enable provisioning with a shell script. Additional provisioners such as
   # Ansible, Chef, Docker, Puppet and Salt are also available. Please see the
   # documentation for more information about their specific syntax and use.
-  # config.vm.provision "shell", inline: <<-SHELL
-  #   apt-get update
-  #   apt-get install -y apache2
-  # SHELL
+  config.vm.provision "shell", inline: <<-SHELL
+    apt-get update
+    apt-get install -y gcc-multilib g++-multilib python3-pip python-pip
+    wget -q -O - https://raw.githubusercontent.com/LedgerHQ/udev-rules/master/add_udev_rules.sh | sudo bash
+    udevadm trigger
+    udevadm control --reload-rules
+    apt-get install -y libudev-dev libusb-1.0-0-dev
+    python3 -m pip install Pillow
+    pip install ledgerblue
+  SHELL
 end
